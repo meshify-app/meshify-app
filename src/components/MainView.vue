@@ -16,7 +16,7 @@
           </span>
           <v-spacer />
           <span>
-            <button @click="loadMeshes()" class="btn btn-primary my-2 my-sm-0">
+            <button @click="addHost()" class="btn btn-primary my-2 my-sm-0">
               Add to Mesh
             </button>
             &nbsp;
@@ -28,41 +28,33 @@
         </nav>
       </header>
     </div>
-    <v-simple-table>
-      <tbody>
-        <tr>
-          <td>
-            <div class="row" id="exp">
-              <v-expansion-panels dark>
-                <v-expansion-panel
-                  @click="loadNetwork"
-                  v-for="(mesh, i) in meshes"
-                  :key="i"
-                >
-                  <v-expansion-panel-header>
-                    {{ mesh.meshName }}
-                  </v-expansion-panel-header>
-                  <v-expansion-panel-content>
-                    <d3-network
-                      class="network"
-                      :net-nodes="nodes"
-                      :net-links="links"
-                      :options="options"
-                    />
-                    <v-data-table
-                      dark
-                      :headers="headers"
-                      :items="mesh.hosts"
-                      :search="search"
-                    />
-                  </v-expansion-panel-content>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </v-simple-table>
+    <div class="row" id="exp">
+      <v-expansion-panels dark>
+        <v-expansion-panel
+          @click="loadNetwork"
+          v-for="(mesh, i) in meshes"
+          :key="i"
+        >
+          <v-expansion-panel-header>
+            {{ mesh.meshName }}
+          </v-expansion-panel-header>
+          <v-expansion-panel-content>
+            <d3-network
+              class="network"
+              :net-nodes="nodes"
+              :net-links="links"
+              :options="options"
+            />
+            <v-data-table
+              dark
+              :headers="headers"
+              :items="mesh.hosts"
+              :search="search"
+            />
+          </v-expansion-panel-content>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </div>
   </div>
 </template>
 <script>
@@ -101,6 +93,14 @@ export default {
       };
     },
   },
+  created() {
+    this.$vuetify.theme.dark = true;
+    let config = JSON.parse(
+      fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+    );
+    console.log("Config = ", config);
+    this.meshes = config.config;
+  },
   methods: {
     async logout() {
       const win = new remote.BrowserWindow({
@@ -120,7 +120,7 @@ export default {
       console.log("Config = ", config);
       this.meshes = config.config;
     },
-    fetchTodos() {
+    addHost() {
       let accessToken = remote.getGlobal("accessToken");
       let body = {
         grant_type: "authorization_code",
