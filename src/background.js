@@ -5,7 +5,14 @@ import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import authService from "./services/auth-service";
 import fs from "fs";
+const path = require("path")
 
+app.whenReady().then(() => {
+  protocol.registerFileProtocol('app', (request, callback) => {
+    const url = request.url.substr(6)
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
+  })
+})
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 // Scheme must be registered before the app is ready
@@ -109,6 +116,11 @@ async function createAppWindow() {
     await mainWindow.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
   } else {
     createProtocol("app");
+    protocol.registerHttpProtocol("app", (req, cb) => {
+      const fullUrl = formFullTodoUrl(req.url)
+      console.log('full url to open ' + fullUrl)
+      mainWindow.loadURL(fullUrl)
+    })
     // Load the index.html when not in development
     mainWindow.loadURL("app://./index.html");
   }
