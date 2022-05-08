@@ -16,7 +16,7 @@
           </span>
           <v-spacer />
           <span>
-            <button @click="addHost()" class="btn btn-primary my-2 my-sm-0">
+            <button @click="startCreate()" class="btn btn-primary my-2 my-sm-0">
               Add to Mesh
             </button>
             &nbsp;
@@ -55,6 +55,81 @@
         </v-expansion-panel>
       </v-expansion-panels>
     </div>
+    <v-dialog v-model="dialogCreate" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Add Host to Mesh</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <v-text-field
+                  v-model="hostName"
+                  label="Host friendly name"
+                  :rules="[(v) => !!v || 'host name is required']"
+                  required
+                />
+                <v-select
+                  return-object
+                  v-model="meshList.selected"
+                  :items="meshList.items"
+                  item-text="text"
+                  item-value="value"
+                  label="Join this mesh"
+                  :rules="[(v) => !!v || 'Mesh is required']"
+                  single
+                  persistent-hint
+                  required
+                />
+                <v-text-field
+                  v-model="endpoint"
+                  label="Public endpoint for clients"
+                />
+                <v-text-field
+                  v-model="listenPort"
+                  type="number"
+                  label="Listen port"
+                />
+
+                <v-combobox
+                  v-model="tags"
+                  chips
+                  hint="Enter a tag, hit tab, hit enter."
+                  label="Tags"
+                  multiple
+                  dark
+                >
+                  <template
+                    v-slot:selection="{ attrs, item, select, selected }"
+                  >
+                    <v-chip
+                      v-bind="attrs"
+                      :input-value="selected"
+                      close
+                      @click="select"
+                      @click:close="tags.splice(tags.indexOf(item), 1)"
+                    >
+                      <strong>{{ item }}</strong
+                      >&nbsp;
+                    </v-chip>
+                  </template>
+                </v-combobox>
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="!valid" color="success" @click="create(host)">
+            Submit
+            <v-icon right dark>mdi-check-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogCreate = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -62,6 +137,22 @@ const { remote } = window.require("electron");
 const axios = require("axios");
 const fs = window.require("fs");
 const D3Network = window.require("vue-d3-network");
+const ipcRenderer = window.require("electron").ipcRenderer;
+
+let Meshes;
+ipcRenderer.on("handle-config", (e, arg) => {
+  // document window
+  Meshes = arg;
+  console.log(Meshes);
+});
+
+export function loadMeshes() {
+  if (Meshes) {
+    this.meshes = Meshes;
+    Meshes = null;
+    console.log("New Config = ", this.meshes);
+  }
+}
 
 export default {
   name: "MainView",
@@ -75,11 +166,22 @@ export default {
       { text: "Address", value: "current.address" },
       { text: "Endpoint", value: "current.endpoint" },
     ],
+    meshifyConfig: {},
     meshes: [],
-    todos: [],
+    myMeshes: [],
     nodes: [],
     links: [],
     nodeSize: 50,
+    selected: "",
+    dialogCreate: false,
+    host: null,
+    valid: false,
+    meshList: {},
+    endpoint: "",
+    listenPort: 0,
+    tags: [],
+    hostEnable: true,
+    hostName: "",
   }),
   computed: {
     options() {
@@ -98,8 +200,17 @@ export default {
     let config = JSON.parse(
       fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
     );
+
     console.log("Config = ", config);
     this.meshes = config.config;
+    this.meshifyConfig = JSON.parse(
+      fs.readFileSync("c:\\ProgramData\\Meshify\\meshify-client.config.json")
+    );
+    this.getMeshList();
+    // setInterval(loadMeshes, 1000);
+    setInterval(() => {
+      this.loadMeshes();
+    }, 1000);
   },
   methods: {
     async logout() {
@@ -120,7 +231,86 @@ export default {
       console.log("Config = ", config);
       this.meshes = config.config;
     },
-    addHost() {
+    startCreate() {
+      this.host = {
+        name: "",
+        email: "",
+        enable: true,
+        tags: [],
+        current: {},
+      };
+
+      // if (Meshes != null) {
+      //  this.meshes = Meshes;
+      //}
+      this.getMeshList();
+
+      this.meshList = { selected: { text: "", value: "" }, items: [] };
+
+      var selected = 0;
+      for (let i = 0; i < this.myMeshes.length; i++) {
+        this.meshList.items[i] = {
+          text: this.myMeshes[i].meshName,
+          value: this.myMeshes[i].id,
+        };
+        if (this.meshList.items[i].text == this.host.meshName) {
+          selected = i;
+        }
+      }
+
+      this.meshList.selected = this.meshList.items[selected];
+      this.dialogCreate = true;
+    },
+
+    create(host) {
+      this.host.name = this.hostName;
+      this.host.current.endpoint = this.endpoint;
+      this.host.current.listenPort = this.listenPort;
+      this.host.current.listenPort = parseInt(this.host.current.listenPort, 10);
+      this.host.meshName = this.meshList.selected.text;
+      this.host.meshid = this.meshList.selected.value;
+      this.host.hostGroup = this.meshifyConfig.hostId;
+      this.dialogCreate = false;
+      this.createHost(host);
+    },
+    createHost(host) {
+      let accessToken = remote.getGlobal("accessToken");
+      let body = {
+        grant_type: "authorization_code",
+        client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+        state: accessToken,
+        code: accessToken,
+        redirect_uri: "https://dev.meshify.app",
+      };
+      axios
+        .post("https://dev.meshify.app/api/v1.0/auth/token", body, {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        })
+        .then(() => {
+          axios
+            .post("https://dev.meshify.app/api/v1.0/host", host, {
+              headers: {
+                Authorization: "Bearer " + accessToken,
+              },
+            })
+            .then(() => {
+              let config = JSON.parse(
+                fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+              );
+              console.log("Config = ", config);
+              this.meshes = config.config;
+            })
+            .catch((error) => {
+              if (error) console.error(error);
+            });
+        })
+        .catch((error) => {
+          if (error) throw new Error(error);
+        });
+    },
+    getMeshList() {
       let accessToken = remote.getGlobal("accessToken");
       let body = {
         grant_type: "authorization_code",
@@ -143,8 +333,7 @@ export default {
               },
             })
             .then((response) => {
-              this.todos = response.data;
-              this.meshes = response.data;
+              this.myMeshes = response.data;
             })
             .catch((error) => {
               if (error) console.error(error);
@@ -197,7 +386,7 @@ body {
   color: white;
 }
 ::-webkit-scrollbar {
-  display: none;
+  overflow: auto;
 }
 text {
   font-size: 12px;
