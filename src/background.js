@@ -54,6 +54,7 @@ function createAuthWindow() {
   authWindow = new BrowserWindow({
     width: 600,
     height: 1000,
+    icon: path.join(__dirname, './assets/meshify.png'),
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
@@ -97,6 +98,7 @@ async function createAppWindow() {
     width: 800,
     height: 600,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, './assets/meshify.png'),
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info

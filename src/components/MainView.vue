@@ -50,7 +50,16 @@
               :headers="headers"
               :items="mesh.hosts"
               :search="search"
-            />
+            >
+              <!-- eslint-disable-next-line -->
+              <template v-slot:item.action="{ item }">
+                <v-btn class="mx-2" icon @click="launchRDP(item)">
+                  <v-icon dark title="Remote Desktop">
+                    mdi-remote-desktop
+                  </v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
           </v-expansion-panel-content>
         </v-expansion-panel>
       </v-expansion-panels>
@@ -138,6 +147,9 @@ const axios = require("axios");
 const fs = window.require("fs");
 const D3Network = window.require("vue-d3-network");
 const ipcRenderer = window.require("electron").ipcRenderer;
+// const shell = window.require("electron").shell;
+const spawn = window.require("child_process").spawn;
+const exec = window.require("child_process").exec;
 
 let Meshes;
 ipcRenderer.on("handle-config", (e, arg) => {
@@ -145,14 +157,6 @@ ipcRenderer.on("handle-config", (e, arg) => {
   Meshes = arg;
   console.log(Meshes);
 });
-
-export function loadMeshes() {
-  if (Meshes) {
-    this.meshes = Meshes;
-    Meshes = null;
-    console.log("New Config = ", this.meshes);
-  }
-}
 
 export default {
   name: "MainView",
@@ -165,6 +169,7 @@ export default {
       { text: "Name", value: "name" },
       { text: "Address", value: "current.address" },
       { text: "Endpoint", value: "current.endpoint" },
+      { text: "Actions", value: "action", sortable: false },
     ],
     meshifyConfig: {},
     meshes: [],
@@ -225,11 +230,20 @@ export default {
       // remote.getCurrentWindow().close();
     },
     loadMeshes() {
-      let config = JSON.parse(
-        fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
-      );
-      console.log("Config = ", config);
-      this.meshes = config.config;
+      if (Meshes) {
+        this.meshes = Meshes;
+        Meshes = null;
+        console.log("loadMeshes Config = ", this.meshes);
+      }
+    },
+    launchSSH(item) {
+      console.log("SSH Item: ", item);
+      exec("cmd.exe", item.name);
+      spawn("cmd.exe", [item.name], { windowsHide: false });
+    },
+    launchRDP(item) {
+      console.log("RDP Item", item);
+      spawn("mstsc.exe", ["/v:" + item.name]);
     },
     startCreate() {
       this.host = {
