@@ -2,6 +2,7 @@
   ExecWait '"$INSTDIR\extra\meshify-client.exe" install'
   ExecWait '"$INSTDIR\extra\meshify-client.exe" start'
   CreateDirectory '$APPDATA\Meshify'
+  CreateDirectory '$APPDATA\Meshify\WireGuard'
 !macroend
 
 !macro customUninstall
