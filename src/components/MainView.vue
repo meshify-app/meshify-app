@@ -206,7 +206,7 @@ export default {
 
     try {
       config = JSON.parse(
-        fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+        fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
       );
     } catch (e) {
       console.error("meshify.conf does not exist: ", e.toString());
@@ -333,7 +333,7 @@ export default {
               let config;
               try {
                 config = JSON.parse(
-                  fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+                  fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
                 );
                 console.log("Config = ", config);
                 this.meshes = config.config;
@@ -343,15 +343,18 @@ export default {
               let host = response.data;
               console.log("Host = ", host);
               let changed = false;
-              if (host.hostGroup != "") {
-                this.meshifyConfig.HostID = host.hostGroup;
+              console.log("Checking meshify-client.config.json for updates");
+              if (this.meshifyConfig.hostId == null) {
+                this.meshifyConfig.hostId = host.hostGroup;
+                this.meshifyConfig.apiKey = host.apiKey;
                 changed = true;
-              }
-              if (host.apiKey != "") {
-                this.meshifyConfig.ApiKey = host.apiKey;
-                changed = true;
+                console.log(
+                  "this.meshifyConfig changed = ",
+                  this.meshifyConfig
+                );
               }
               if (changed) {
+                console.log("Writing new meshify-client.config.json");
                 fs.writeFileSync(
                   "c:\\ProgramData\\Meshify\\meshify-client.config.json",
                   JSON.stringify(this.meshifyConfig)

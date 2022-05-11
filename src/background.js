@@ -42,11 +42,11 @@ let config;
 function getConfig() {
   try {
     config = JSON.parse(
-      fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+      fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
     );
     gMeshes = config.config;
   } catch (err) {
-    config = [];
+    config = {};
   }
 }
 
@@ -129,7 +129,7 @@ function startWatcher(path) {
   });
 
   function onWatcherReady() {
-    console.info(
+    console.log(
       "From here can you check for real changes, the initial scan has been completed."
     );
   }
@@ -195,7 +195,7 @@ app.on("activate", () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", async () => {
   getConfig();
-  startWatcher("c:\\ProgramData\\Meshify\\Meshify.conf");
+  startWatcher("c:\\ProgramData\\Meshify\\meshify.conf");
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
