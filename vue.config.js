@@ -11,6 +11,13 @@ module.exports = defineConfig({
         ],
         extraFiles: [
           {
+            from: 'public',
+            to: 'public',
+            filter: [
+              '**/*'
+            ]
+          },
+          {
             from: 'extra',
             to: 'extra',
             filter: [
@@ -24,7 +31,6 @@ module.exports = defineConfig({
       author: "alan@meshify.app",
       description : "Unified Meshify Agent",
       win: {
-        icon: "build/icon.png",
         target: "nsis",
         requestedExecutionLevel: "requireAdministrator"
       },
