@@ -1,5 +1,16 @@
 {
   "win": {
     "icon": "build/icon.ico"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": true,
+    "allowElevation": true,
+    "allowToChangeInstallationDirectory": false,
+    "include": "build/installer.nsh",
+    "runAfterFinish": true,
+    "createDesktopShortcut": true, 
+    "createStartMenuShortcut": true
   }
 }
+

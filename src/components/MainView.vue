@@ -202,15 +202,35 @@ export default {
   },
   created() {
     this.$vuetify.theme.dark = true;
-    let config = JSON.parse(
-      fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
-    );
+    let config = [];
+
+    try {
+      config = JSON.parse(
+        fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+      );
+    } catch (e) {
+      console.error("meshify.conf does not exist: ", e.toString());
+    }
 
     console.log("Config = ", config);
     this.meshes = config.config;
-    this.meshifyConfig = JSON.parse(
-      fs.readFileSync("c:\\ProgramData\\Meshify\\meshify-client.config.json")
-    );
+
+    try {
+      this.meshifyConfig = JSON.parse(
+        fs.readFileSync("c:\\ProgramData\\Meshify\\meshify-client.config.json")
+      );
+    } catch (e) {
+      console.error(
+        "meshify-client.config.json does not exist: ",
+        e.toString()
+      );
+      this.meshifyConfig = {};
+      this.meshifyConfig.MeshifyHost = "https://my.meshify.app";
+      this.meshifyConfig.SourceAddress = "0.0.0.0";
+      this.meshifyConfig.Quiet = true;
+      this.meshifyConfig.CheckInterval = 10;
+      this.meshifyConfig.HostID = "";
+    }
     this.getMeshList();
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
@@ -309,12 +329,32 @@ export default {
                 Authorization: "Bearer " + accessToken,
               },
             })
-            .then(() => {
+            .then((response) => {
               let config = JSON.parse(
                 fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
               );
               console.log("Config = ", config);
               this.meshes = config.config;
+              let host = response.data;
+              let changed = false;
+              if (host.hostGroup == "") {
+                this.meshifyConfig.HostID = host.hostGroup;
+                changed = true;
+              }
+              if (host.APIKey == "") {
+                this.meshifyConfig.ApiKey = host.APIKey;
+                changed = true;
+              }
+              if (changed) {
+                fs.WriteFileSync(
+                  "c:\\ProgramData\\Meshify\\meshify-client.config.json",
+                  this.meshifyConfig
+                );
+                console.log(
+                  "meshify-client.config.json has been updated :",
+                  this.meshifyConfig
+                );
+              }
             })
             .catch((error) => {
               if (error) console.error(error);

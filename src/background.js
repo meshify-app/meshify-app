@@ -38,11 +38,17 @@ async function createWindow() {
   }
 }
 
+let config;
 function getConfig() {
-  let config = JSON.parse(
-    fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
-  );
-  gMeshes = config.config;
+  try {
+    config = JSON.parse(
+      fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+    );
+    gMeshes = config.config;
+  } catch (err) {
+    config = []
+  }
+
 }
 
 let authWindow;
@@ -138,9 +144,7 @@ function startWatcher(path) {
       console.log("Directory", path, "has been added");
     })
     .on("change", function (path) {
-      let config = JSON.parse(
-        fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
-      );
+      getConfig();
       console.log("Config = ", config);
       global.gMeshes = config.config;
       store.state.meshes = config.config;
