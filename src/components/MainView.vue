@@ -330,25 +330,31 @@ export default {
               },
             })
             .then((response) => {
-              let config = JSON.parse(
-                fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
-              );
-              console.log("Config = ", config);
-              this.meshes = config.config;
+              let config;
+              try {
+                config = JSON.parse(
+                  fs.readFileSync("c:\\ProgramData\\Meshify\\Meshify.conf")
+                );
+                console.log("Config = ", config);
+                this.meshes = config.config;
+              } catch (e) {
+                console.log("Could not open meshify.conf:", e);
+              }
               let host = response.data;
+              console.log("Host = ", host);
               let changed = false;
-              if (host.hostGroup == "") {
+              if (host.hostGroup != "") {
                 this.meshifyConfig.HostID = host.hostGroup;
                 changed = true;
               }
-              if (host.APIKey == "") {
-                this.meshifyConfig.ApiKey = host.APIKey;
+              if (host.apiKey != "") {
+                this.meshifyConfig.ApiKey = host.apiKey;
                 changed = true;
               }
               if (changed) {
-                fs.WriteFileSync(
+                fs.writeFileSync(
                   "c:\\ProgramData\\Meshify\\meshify-client.config.json",
-                  this.meshifyConfig
+                  JSON.stringify(this.meshifyConfig)
                 );
                 console.log(
                   "meshify-client.config.json has been updated :",

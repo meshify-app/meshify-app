@@ -46,9 +46,8 @@ function getConfig() {
     );
     gMeshes = config.config;
   } catch (err) {
-    config = []
+    config = [];
   }
-
 }
 
 let authWindow;
@@ -138,6 +137,13 @@ function startWatcher(path) {
   // Declare the listeners of the watcher
   watcher
     .on("add", function (path) {
+      getConfig();
+      console.log("Config = ", config);
+      global.gMeshes = config.config;
+      store.state.meshes = config.config;
+      store.commit("meshes", config.config);
+
+      mainWindow.webContents.send("handle-config", config.config);
       console.log("File", path, "has been added");
     })
     .on("addDir", function (path) {

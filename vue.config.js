@@ -28,27 +28,22 @@ module.exports = defineConfig({
         target: [
           {
             target: "nsis",
-            arch: [
-              "x64"
-            ]
-          },{
+            arch: ["x64"],
+          },
+          {
             target: "msi",
-            arch: [
-              "x64"
-            ]
+            arch: ["x64"],
           },
           {
             target: "zip",
-            arch: [
-              "x64"
-            ]
-          }
+            arch: ["x64"],
+          },
         ],
         publisherName: "Meshify.app Inc.",
         legalTrademarks: "",
         verifyUpdateCodeSignature: false,
         requestedExecutionLevel: "requireAdministrator",
-        artifactName: "meshifyapp-${version}-${os}-${arch}.${ext}"
+        artifactName: "meshifyapp-${version}-${os}-${arch}.${ext}",
       },
       nsis: {
         include: "build/installer.nsh",
