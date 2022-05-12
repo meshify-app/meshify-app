@@ -150,6 +150,12 @@ const ipcRenderer = window.require("electron").ipcRenderer;
 // const shell = window.require("electron").shell;
 const spawn = window.require("child_process").spawn;
 const exec = window.require("child_process").exec;
+const env = require("../../env");
+var { serverUrl, appData } = env;
+
+if (process.env.ALLUSERSPROFILE != null) {
+  appData = process.env.ALLUSERSPROFILE;
+}
 
 let Meshes;
 ipcRenderer.on("handle-config", (e, arg) => {
@@ -205,9 +211,7 @@ export default {
     let config = [];
 
     try {
-      config = JSON.parse(
-        fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
-      );
+      config = JSON.parse(fs.readFileSync(appData + "\\Meshify\\meshify.conf"));
     } catch (e) {
       console.error("meshify.conf does not exist: ", e.toString());
     }
@@ -217,7 +221,7 @@ export default {
 
     try {
       this.meshifyConfig = JSON.parse(
-        fs.readFileSync("c:\\ProgramData\\Meshify\\meshify-client.config.json")
+        fs.readFileSync(appData + "\\Meshify\\meshify-client.config.json")
       );
     } catch (e) {
       console.error(
@@ -225,7 +229,7 @@ export default {
         e.toString()
       );
       this.meshifyConfig = {};
-      this.meshifyConfig.MeshifyHost = "https://my.meshify.app";
+      this.meshifyConfig.MeshifyHost = serverUrl;
       this.meshifyConfig.SourceAddress = "0.0.0.0";
       this.meshifyConfig.Quiet = true;
       this.meshifyConfig.CheckInterval = 10;
@@ -314,17 +318,17 @@ export default {
         client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
         state: accessToken,
         code: accessToken,
-        redirect_uri: "https://dev.meshify.app",
+        redirect_uri: serverUrl,
       };
       axios
-        .post("https://dev.meshify.app/api/v1.0/auth/token", body, {
+        .post(serverUrl + "/api/v1.0/auth/token", body, {
           headers: {
             Authorization: "Bearer " + accessToken,
           },
         })
         .then(() => {
           axios
-            .post("https://dev.meshify.app/api/v1.0/host", host, {
+            .post(serverUrl + "/api/v1.0/host", host, {
               headers: {
                 Authorization: "Bearer " + accessToken,
               },
@@ -333,7 +337,7 @@ export default {
               let config;
               try {
                 config = JSON.parse(
-                  fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
+                  fs.readFileSync(appData + "\\Meshify\\meshify.conf")
                 );
                 console.log("Config = ", config);
                 this.meshes = config.config;
@@ -356,7 +360,7 @@ export default {
               if (changed) {
                 console.log("Writing new meshify-client.config.json");
                 fs.writeFileSync(
-                  "c:\\ProgramData\\Meshify\\meshify-client.config.json",
+                  appData + "\\Meshify\\meshify-client.config.json",
                   JSON.stringify(this.meshifyConfig)
                 );
                 console.log(

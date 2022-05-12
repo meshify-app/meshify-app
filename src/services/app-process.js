@@ -15,7 +15,6 @@ function createAppWindow() {
     useContentSize: true,
     autoHideMenuBar: true,
     width: 1000,
-    icon: path.join(__dirname, "./assets/meshify.png"),
     webPreferences: {
       nodeIntegration: true,
       nodeIntegrationInWorker: true,

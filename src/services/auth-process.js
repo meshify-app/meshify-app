@@ -11,7 +11,6 @@ function createAuthWindow() {
   win = new BrowserWindow({
     width: 600,
     height: 1000,
-    icon: path.join(__dirname, "./assets/meshify.png"),
     webPreferences: {
       nodeIntegration: false,
     },
