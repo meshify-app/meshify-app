@@ -15,6 +15,12 @@ import fs from "fs";
 const path = require("path");
 const fileWatcher = require("chokidar");
 import store from "./store";
+const env = require("../env");
+var { appData } = env;
+if (process.env.ALLUSERSPROFILE != null) {
+  appData = process.env.ALLUSERSPROFILE;
+}
+
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
@@ -49,7 +55,7 @@ let config;
 function getConfig() {
   try {
     config = JSON.parse(
-      fs.readFileSync("c:\\ProgramData\\Meshify\\meshify.conf")
+      fs.readFileSync( appData + "\\Meshify\\meshify.conf")
     );
   } catch (err) {
     config = {};
@@ -227,6 +233,10 @@ app.on("ready", async () => {
   let icon = nativeImage.createFromPath(filename);
   tray = new Tray(icon);
 
+  tray.on('click', function() {
+    mainWindow.show();
+ })
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: "Open",
@@ -248,7 +258,7 @@ app.on("ready", async () => {
 
   createWindow();
 
-  startWatcher("c:\\ProgramData\\Meshify\\meshify.conf");
+  startWatcher( appData + "\\Meshify\\meshify.conf");
 
 });
 
