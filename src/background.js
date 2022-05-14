@@ -21,6 +21,16 @@ if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
 
+import { autoUpdater } from "electron-updater";
+
+export default class AppUpdater {
+  constructor() {
+    const log = require("electron-log");
+    log.transports.file.level = "debug";
+    autoUpdater.logger = log;
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+}
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
@@ -54,9 +64,7 @@ async function createWindow() {
 let config;
 function getConfig() {
   try {
-    config = JSON.parse(
-      fs.readFileSync( appData + "\\Meshify\\meshify.conf")
-    );
+    config = JSON.parse(fs.readFileSync(appData + "\\Meshify\\meshify.conf"));
   } catch (err) {
     config = {};
   }
@@ -111,8 +119,8 @@ function destroyAuthWin() {
 async function createAppWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1100,
+    height: 800,
     autoHideMenuBar: true,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
@@ -168,7 +176,12 @@ function startWatcher(path) {
       store.state.meshes = config.config;
       store.commit("meshes", config.config);
 
-      mainWindow.webContents.send("handle-config", config.config);
+      try {
+        mainWindow.webContents.send("handle-config", config.config);
+      } catch (e) {
+        console.error("send config to renderer:", e.toString());
+      }
+
       console.log("File", path, "has been added");
     })
     .on("addDir", function (path) {
@@ -180,7 +193,11 @@ function startWatcher(path) {
       store.state.meshes = config.config;
       store.commit("meshes", config.config);
 
-      mainWindow.webContents.send("handle-config", config.config);
+      try {
+        mainWindow.webContents.send("handle-config", config.config);
+      } catch (e) {
+        console.error("send config to renderer:", e.toString());
+      }
       console.log("File", path, "has been changed");
     })
     .on("unlink", function (path) {
@@ -233,9 +250,9 @@ app.on("ready", async () => {
   let icon = nativeImage.createFromPath(filename);
   tray = new Tray(icon);
 
-  tray.on('click', function() {
+  tray.on("click", function () {
     mainWindow.show();
- })
+  });
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -258,8 +275,7 @@ app.on("ready", async () => {
 
   createWindow();
 
-  startWatcher( appData + "\\Meshify\\meshify.conf");
-
+  startWatcher(appData + "\\Meshify\\meshify.conf");
 });
 
 // Exit cleanly on request from parent process in development mode.

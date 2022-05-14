@@ -29,6 +29,25 @@
       </header>
     </div>
     <div class="row" id="exp">
+      <h4 style="align: center">{{ meshName }}</h4>
+      <div class="chart-wrapper">
+        <apexChart
+          v-show="showChart"
+          ref="chart1"
+          id="chart1"
+          dark
+          width="400"
+          type="line"
+          :options="goptions"
+          :series="series"
+        ></apexChart>
+        <d3-network
+          class="network"
+          :net-nodes="nodes"
+          :net-links="links"
+          :options="options"
+        />
+      </div>
       <v-expansion-panels dark>
         <v-expansion-panel
           @click="loadNetwork"
@@ -39,12 +58,6 @@
             {{ mesh.meshName }}
           </v-expansion-panel-header>
           <v-expansion-panel-content>
-            <d3-network
-              class="network"
-              :net-nodes="nodes"
-              :net-links="links"
-              :options="options"
-            />
             <v-data-table
               dark
               :headers="headers"
@@ -98,30 +111,6 @@
                   type="number"
                   label="Listen port"
                 />
-
-                <v-combobox
-                  v-model="tags"
-                  chips
-                  hint="Enter a tag, hit tab, hit enter."
-                  label="Tags"
-                  multiple
-                  dark
-                >
-                  <template
-                    v-slot:selection="{ attrs, item, select, selected }"
-                  >
-                    <v-chip
-                      v-bind="attrs"
-                      :input-value="selected"
-                      close
-                      @click="select"
-                      @click:close="tags.splice(tags.indexOf(item), 1)"
-                    >
-                      <strong>{{ item }}</strong
-                      >&nbsp;
-                    </v-chip>
-                  </template>
-                </v-combobox>
               </v-form>
             </v-col>
           </v-row>
@@ -151,6 +140,8 @@ const ipcRenderer = window.require("electron").ipcRenderer;
 const spawn = window.require("child_process").spawn;
 const exec = window.require("child_process").exec;
 const env = require("../../env");
+const ApexCharts = window.require("apexcharts");
+
 var { serverUrl, appData } = env;
 
 if (process.env.ALLUSERSPROFILE != null) {
@@ -179,6 +170,8 @@ export default {
     ],
     meshifyConfig: {},
     meshes: [],
+    mesh: null,
+    meshName: "",
     myMeshes: [],
     nodes: [],
     links: [],
@@ -193,6 +186,46 @@ export default {
     tags: [],
     hostEnable: true,
     hostName: "",
+    showChart: false,
+    goptions: {
+      grid: {
+        show: true,
+      },
+      stroke: {
+        width: 2,
+      },
+      theme: {
+        mode: "dark",
+      },
+      title: {
+        text: "",
+      },
+      chart: {
+        id: "chart",
+        toolbar: {
+          show: false,
+        },
+        responsive: [
+          {
+            breakpoint: 480,
+            options: {
+              chart: {
+                width: 200,
+              },
+              legend: {
+                show: false,
+              },
+            },
+          },
+        ],
+      },
+      xaxis: {
+        categories: ["1min", 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5],
+      },
+    },
+    series: [],
+    seriesInit: false,
+    chart: null,
   }),
   computed: {
     options() {
@@ -210,6 +243,10 @@ export default {
     this.$vuetify.theme.dark = true;
     let config = [];
 
+    this.chart = new ApexCharts(
+      window.document.querySelector("chart"),
+      this.goptions
+    );
     try {
       config = JSON.parse(fs.readFileSync(appData + "\\Meshify\\meshify.conf"));
     } catch (e) {
@@ -239,7 +276,10 @@ export default {
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
       this.loadMeshes();
-    }, 1000);
+      if (this.mesh != null) {
+        this.getMetrics(this, this.mesh.meshName);
+      }
+    }, 5000);
   },
   methods: {
     async logout() {
@@ -300,6 +340,57 @@ export default {
       this.dialogCreate = true;
     },
 
+    getMetrics(that, mesh) {
+      let stats;
+      axios
+        .get("http://127.0.0.1:53280/stats/" + mesh, {
+          headers: {},
+        })
+        .then((response) => {
+          stats = response.data;
+          console.log("Stats = ", stats);
+
+          if (this.series.length == 0 || this.seriesInit) {
+            // this.series = [response.data.length];
+            console.log("seriesInit = %s", this.seriesInit);
+            this.seriesInit = false;
+            that.series[0] = {
+              name: "Sent",
+              data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              last: stats[mesh].Send,
+              head: 0,
+              buckets: 12,
+            };
+            that.series[1] = {
+              name: "Received",
+              data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              last: stats[mesh].Recv,
+              head: 0,
+              buckets: 12,
+            };
+          }
+          for (let i = 1; i < 12; i++) {
+            that.series[0].data[i - 1] = that.series[0].data[i];
+            that.series[1].data[i - 1] = that.series[1].data[i];
+          }
+          that.series[0].data[11] = stats[mesh].Send - that.series[0].last;
+          that.series[0].head = that.series[0].head + 1;
+          that.series[0].last = stats[mesh].Send;
+          that.series[1].data[11] = stats[mesh].Recv - that.series[1].last;
+          that.series[1].head = that.series[1].head + 1;
+          that.series[1].last = stats[mesh].Recv;
+          console.log("Send %d %d", that.series[0].head, that.series[0].last);
+          console.log("Recv %d %d", that.series[1].head, that.series[1].last);
+
+          that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
+        });
+      // .catch(() => {});
+      //       {
+      // name: "",
+      // data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      // head: 0,
+      // buckets: 12,
+    },
     create(host) {
       this.host.name = this.hostName;
       this.host.current.endpoint = this.endpoint;
@@ -416,20 +507,24 @@ export default {
       let l = 0;
       this.links = [];
       this.nodes = [];
-      let mesh;
       let mesh_hosts = [];
       for (let i = 0; i < this.meshes.length; i++) {
         if (this.meshes[i].meshName == name) {
-          mesh = this.meshes[i];
+          this.mesh = this.meshes[i];
           break;
         }
       }
-      for (let i = 0; i < mesh.hosts.length; i++) {
-        if (mesh.hosts[i].meshName == name) {
-          mesh_hosts[x] = mesh.hosts[i];
+      this.seriesInit = true;
+      this.meshName = this.mesh.meshName;
+      this.showChart = true;
+      // this.getMetrics(this.mesh.meshName);
+
+      for (let i = 0; i < this.mesh.hosts.length; i++) {
+        if (this.mesh.hosts[i].meshName == name) {
+          mesh_hosts[x] = this.mesh.hosts[i];
           this.nodes[x] = {
             id: x,
-            name: mesh.hosts[i].name /* _color:'gray'*/,
+            name: this.mesh.hosts[i].name /* _color:'gray'*/,
           };
           x++;
         }
@@ -464,14 +559,21 @@ text {
   fill: #336699;
   stroke: #5b81a7;
 }
+/*
 .link {
   color: white;
 }
+*/
 .net-svg {
   margin: 0 auto;
 }
 .network {
   display: flex;
+  justify-content: center;
+}
+div.chart-wrapper {
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 </style>

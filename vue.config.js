@@ -3,7 +3,7 @@ module.exports = defineConfig({
   transpileDependencies: ["vuetify"],
   pluginOptions: {
     electronBuilder: {
-      externals: ["vue-d3-network", "chokidar"],
+      externals: ["vue-d3-network", "chokidar", "apexcharts"],
       builderOptions: {
         productName: "meshifyapp",
         files: ["**/*"],
