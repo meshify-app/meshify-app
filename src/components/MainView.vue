@@ -175,7 +175,7 @@ export default {
     myMeshes: [],
     nodes: [],
     links: [],
-    nodeSize: 50,
+    nodeSize: 30,
     selected: "",
     dialogCreate: false,
     host: null,
@@ -220,7 +220,37 @@ export default {
         ],
       },
       xaxis: {
-        categories: ["1min", 55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5],
+        categories: [
+          "1min",
+          " ",
+          " ",
+          45,
+          " ",
+          " ",
+          30,
+          " ",
+          " ",
+          15,
+          " ",
+          " ",
+        ],
+      },
+      yaxis: {
+        labels: {
+          formatter: function (value) {
+            var result = value + " bps";
+            if (value > 1000) {
+              result = ((value / 1000) >> 0) + " Kbps";
+            }
+            if (value > 1000000) {
+              result = (value / 1000000).toFixed(1) + " Mbps";
+            }
+            if (value > 1000000000) {
+              result = (value / 1000000000).toFixed(1) + " Gbps";
+            }
+            return result;
+          },
+        },
       },
     },
     series: [],
@@ -230,8 +260,8 @@ export default {
   computed: {
     options() {
       return {
-        force: 4000,
-        size: { w: 600, h: 400 },
+        force: 2000,
+        size: { w: 400, h: 300 },
         nodeSize: this.nodeSize,
         nodeLabels: true,
         linkLabels: true,
@@ -348,41 +378,44 @@ export default {
         })
         .then((response) => {
           stats = response.data;
-          console.log("Stats = ", stats);
+          if (stats[mesh] == null) {
+            console.log("Response did not contain a result");
+          } else {
+            console.log("Stats = ", stats);
+            if (this.series.length == 0 || this.seriesInit) {
+              // this.series = [response.data.length];
+              console.log("seriesInit = %s", this.seriesInit);
+              this.seriesInit = false;
+              that.series[0] = {
+                name: "Sent",
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                last: stats[mesh].Send,
+                head: 0,
+                buckets: 12,
+              };
+              that.series[1] = {
+                name: "Received",
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                last: stats[mesh].Recv,
+                head: 0,
+                buckets: 12,
+              };
+            }
+            for (let i = 1; i < 12; i++) {
+              that.series[0].data[i - 1] = that.series[0].data[i];
+              that.series[1].data[i - 1] = that.series[1].data[i];
+            }
+            that.series[0].data[11] = stats[mesh].Send - that.series[0].last;
+            that.series[0].head = that.series[0].head + 1;
+            that.series[0].last = stats[mesh].Send;
+            that.series[1].data[11] = stats[mesh].Recv - that.series[1].last;
+            that.series[1].head = that.series[1].head + 1;
+            that.series[1].last = stats[mesh].Recv;
+            console.log("Send %d %d", that.series[0].head, that.series[0].last);
+            console.log("Recv %d %d", that.series[1].head, that.series[1].last);
 
-          if (this.series.length == 0 || this.seriesInit) {
-            // this.series = [response.data.length];
-            console.log("seriesInit = %s", this.seriesInit);
-            this.seriesInit = false;
-            that.series[0] = {
-              name: "Sent",
-              data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              last: stats[mesh].Send,
-              head: 0,
-              buckets: 12,
-            };
-            that.series[1] = {
-              name: "Received",
-              data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-              last: stats[mesh].Recv,
-              head: 0,
-              buckets: 12,
-            };
+            that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
           }
-          for (let i = 1; i < 12; i++) {
-            that.series[0].data[i - 1] = that.series[0].data[i];
-            that.series[1].data[i - 1] = that.series[1].data[i];
-          }
-          that.series[0].data[11] = stats[mesh].Send - that.series[0].last;
-          that.series[0].head = that.series[0].head + 1;
-          that.series[0].last = stats[mesh].Send;
-          that.series[1].data[11] = stats[mesh].Recv - that.series[1].last;
-          that.series[1].head = that.series[1].head + 1;
-          that.series[1].last = stats[mesh].Recv;
-          console.log("Send %d %d", that.series[0].head, that.series[0].last);
-          console.log("Recv %d %d", that.series[1].head, that.series[1].last);
-
-          that.$refs.chart1.updateSeries([that.series[0], that.series[1]]);
         });
       // .catch(() => {});
       //       {
@@ -570,6 +603,13 @@ text {
 .network {
   display: flex;
   justify-content: center;
+}
+
+h4 {
+  margin: 20px;
+  display: flex;
+  justify-content: center;
+  font-size: 18px;
 }
 div.chart-wrapper {
   display: flex;
