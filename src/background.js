@@ -21,19 +21,8 @@ if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
 
-import { autoUpdater } from "electron-updater";
-
-export default class AppUpdater {
-  constructor() {
-    const log = require("electron-log");
-    log.transports.file.level = "debug";
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
-
 //Multicast Client receiving sent messages
-var PORT = 53281;
+var PORT = 25264;
 var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
 var dgram = require("dgram");
 var mclient = dgram.createSocket("udp4");
@@ -60,7 +49,7 @@ mclient.on("error", (err) => {
   console.error(err);
 });
 
-mclient.bind(PORT, "10.1.1.192");
+mclient.bind(PORT, "0.0.0.0");
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
