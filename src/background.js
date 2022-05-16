@@ -32,6 +32,36 @@ export default class AppUpdater {
   }
 }
 
+//Multicast Client receiving sent messages
+var PORT = 53281;
+var MCAST_ADDR = "224.1.1.1"; //same mcast address as Server
+var dgram = require("dgram");
+var mclient = dgram.createSocket("udp4");
+
+mclient.on("listening", function () {
+  var address = mclient.address();
+  console.log(
+    "UDP Client listening on " + address.address + ":" + address.port
+  );
+  mclient.setBroadcast(true);
+  mclient.setMulticastTTL(128);
+  mclient.addMembership(MCAST_ADDR);
+});
+
+mclient.on("message", function (message, remote) {
+  try {
+    mainWindow.webContents.send("handle-dns", "" + message);
+  } catch (e) {
+    console.error("send dns query to renderer:", e.toString());
+  }
+});
+
+mclient.on("error", (err) => {
+  console.error(err);
+});
+
+mclient.bind(PORT, "10.1.1.192");
+
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
     const url = request.url.substr(6);

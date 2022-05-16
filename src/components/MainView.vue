@@ -31,12 +31,36 @@
     <div class="row" id="exp">
       <h4 style="align: center">{{ meshName }}</h4>
       <div class="chart-wrapper">
+        <div
+          id="canvas"
+          style="
+            border: 1px solid #000000;
+            background: #333;
+            width: 400px;
+            min-width: 200px;
+            height: 300px;
+            overflow-y: auto;
+            padding: 5px;
+            margin-right: 5px;
+            margin-left: 5px;
+          "
+        >
+          <b>DNS Queries</b>
+          <div
+            v-for="(query, index) in queries"
+            :key="index"
+            style="font-size: 12px"
+          >
+            {{ query }}
+          </div>
+        </div>
         <apexChart
           v-show="showChart"
           ref="chart1"
           id="chart1"
           dark
           width="400"
+          height="300"
           type="line"
           :options="goptions"
           :series="series"
@@ -154,6 +178,10 @@ ipcRenderer.on("handle-config", (e, arg) => {
   Meshes = arg;
   console.log(Meshes);
 });
+let Queries = [];
+ipcRenderer.on("handle-dns", (e, arg) => {
+  Queries.push(arg);
+});
 
 export default {
   name: "MainView",
@@ -169,6 +197,7 @@ export default {
       { text: "Actions", value: "action", sortable: false },
     ],
     meshifyConfig: {},
+    queries: [],
     meshes: [],
     mesh: null,
     meshName: "",
@@ -306,6 +335,7 @@ export default {
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
       this.loadMeshes();
+      this.loadQueries();
       if (this.mesh != null) {
         this.getMetrics(this, this.mesh.meshName);
       }
@@ -328,6 +358,17 @@ export default {
         this.meshes = Meshes;
         Meshes = null;
         console.log("loadMeshes Config = ", this.meshes);
+      }
+    },
+    loadQueries() {
+      if (Queries) {
+        for (let i = 0; i < Queries.length; i++) {
+          this.queries.unshift(Queries[i]);
+          if (this.queries.length > 1000) {
+            this.queries.pop();
+          }
+        }
+        Queries = [];
       }
     },
     launchSSH(item) {
@@ -580,8 +621,18 @@ body {
   background: #333;
   color: white;
 }
+
 ::-webkit-scrollbar {
   overflow: auto;
+}
+::-webkit-scrollbar-track {
+  background: #444;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+::-webkit-scrollbar-corner {
+  background: #333;
 }
 text {
   font-size: 12px;
@@ -613,7 +664,7 @@ h4 {
 }
 div.chart-wrapper {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: left;
+  justify-content: left;
 }
 </style>
