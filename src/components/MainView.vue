@@ -549,17 +549,17 @@ export default {
         client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
         state: accessToken,
         code: accessToken,
-        redirect_uri: "https://dev.meshify.app",
+        redirect_uri: serverUrl,
       };
       axios
-        .post("https://dev.meshify.app/api/v1.0/auth/token", body, {
+        .post(serverUrl + "/api/v1.0/auth/token", body, {
           headers: {
             Authorization: "Bearer " + accessToken,
           },
         })
         .then(() => {
           axios
-            .get("https://dev.meshify.app/api/v1.0/mesh", {
+            .get(serverUrl +"/api/v1.0/mesh", {
               headers: {
                 Authorization: "Bearer " + accessToken,
               },
