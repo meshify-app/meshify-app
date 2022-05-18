@@ -16,10 +16,19 @@ const path = require("path");
 const fileWatcher = require("chokidar");
 import store from "./store";
 const env = require("../env");
+const os = require("os");
+
 var { appData } = env;
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
 }
+
+let MeshifyConfigPath = appData + "\\meshify\\meshify.conf";
+
+if (os.platform() == "linux") {
+  MeshifyConfigPath = "/etc/meshify/meshify.conf";
+}
+
 
 //Multicast Client receiving sent messages
 var PORT = 25264;
@@ -83,7 +92,7 @@ async function createWindow() {
 let config;
 function getConfig() {
   try {
-    config = JSON.parse(fs.readFileSync(appData + "\\Meshify\\meshify.conf"));
+    config = JSON.parse(fs.readFileSync(MeshifyConfigPath));
   } catch (err) {
     config = {};
   }
@@ -99,6 +108,7 @@ function createAuthWindow() {
     width: 600,
     height: 1000,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, "/extra/meshify.png"),
     webPreferences: {
       nodeIntegration: false,
     },
@@ -149,6 +159,7 @@ async function createAppWindow() {
       contextIsolation: false,
       enableRemoteModule: true,
       backgroundColor: "#333",
+      icon: path.join(__dirname, "/extra/meshify.png"),
     },
   });
 
@@ -294,7 +305,7 @@ app.on("ready", async () => {
 
   createWindow();
 
-  startWatcher(appData + "\\Meshify\\meshify.conf");
+  startWatcher(MeshifyConfigPath);
 });
 
 // Exit cleanly on request from parent process in development mode.

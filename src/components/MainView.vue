@@ -165,11 +165,20 @@ const spawn = window.require("child_process").spawn;
 const exec = window.require("child_process").exec;
 const env = require("../../env");
 const ApexCharts = window.require("apexcharts");
+const os = window.require("os");
 
 var { serverUrl, appData } = env;
 
 if (process.env.ALLUSERSPROFILE != null) {
   appData = process.env.ALLUSERSPROFILE;
+}
+
+let MeshifyConfigPath = appData + "\\meshify\\meshify.conf";
+let MeshifyClientPath = appData + "\\meshify\\meshify-client.config.json";
+
+if (os.platform() == "linux") {
+  MeshifyConfigPath = "/etc/meshify/meshify.conf";
+  MeshifyClientPath = "/etc/meshify/meshify-client.config.json";
 }
 
 let Meshes;
@@ -307,7 +316,7 @@ export default {
       this.goptions
     );
     try {
-      config = JSON.parse(fs.readFileSync(appData + "\\Meshify\\meshify.conf"));
+      config = JSON.parse(fs.readFileSync(MeshifyConfigPath));
     } catch (e) {
       console.error("meshify.conf does not exist: ", e.toString());
     }
@@ -316,9 +325,7 @@ export default {
     this.meshes = config.config;
 
     try {
-      this.meshifyConfig = JSON.parse(
-        fs.readFileSync(appData + "\\Meshify\\meshify-client.config.json")
-      );
+      this.meshifyConfig = JSON.parse(fs.readFileSync(MeshifyClientPath));
     } catch (e) {
       console.error(
         "meshify-client.config.json does not exist: ",
@@ -472,7 +479,7 @@ export default {
       this.host.current.listenPort = parseInt(this.host.current.listenPort, 10);
       this.host.meshName = this.meshList.selected.text;
       this.host.meshid = this.meshList.selected.value;
-      this.host.hostGroup = this.meshifyConfig.hostId;
+      this.host.hostGroup = this.meshifyConfig.HostID;
       this.dialogCreate = false;
       this.createHost(host);
     },
@@ -501,9 +508,7 @@ export default {
             .then((response) => {
               let config;
               try {
-                config = JSON.parse(
-                  fs.readFileSync(appData + "\\Meshify\\meshify.conf")
-                );
+                config = JSON.parse(fs.readFileSync(MeshifyConfigPath));
                 console.log("Config = ", config);
                 this.meshes = config.config;
               } catch (e) {
@@ -513,9 +518,9 @@ export default {
               console.log("Host = ", host);
               let changed = false;
               console.log("Checking meshify-client.config.json for updates");
-              if (this.meshifyConfig.hostId == null) {
-                this.meshifyConfig.hostId = host.hostGroup;
-                this.meshifyConfig.apiKey = host.apiKey;
+              if (this.meshifyConfig.HostID == null) {
+                this.meshifyConfig.HostID = host.hostGroup;
+                this.meshifyConfig.ApiKey = host.apiKey;
                 changed = true;
                 console.log(
                   "this.meshifyConfig changed = ",
@@ -525,7 +530,7 @@ export default {
               if (changed) {
                 console.log("Writing new meshify-client.config.json");
                 fs.writeFileSync(
-                  appData + "\\Meshify\\meshify-client.config.json",
+                  MeshifyClientPath,
                   JSON.stringify(this.meshifyConfig)
                 );
                 console.log(
@@ -559,7 +564,7 @@ export default {
         })
         .then(() => {
           axios
-            .get(serverUrl +"/api/v1.0/mesh", {
+            .get(serverUrl + "/api/v1.0/mesh", {
               headers: {
                 Authorization: "Bearer " + accessToken,
               },
