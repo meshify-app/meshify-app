@@ -355,7 +355,7 @@ export default {
         height: 600,
         show: false,
       });
-      win.loadURL("http://auth.meshify.app/v2/logout");
+      win.loadURL("http://auth.meshify.app/v2/logout?federated");
       // win.close();
       // remote.getCurrentWindow().loadURL("http://auth.meshify.app/v2/logout");
       // remote.getCurrentWindow().close();
