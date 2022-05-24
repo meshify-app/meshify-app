@@ -385,7 +385,11 @@ export default {
     },
     launchRDP(item) {
       console.log("RDP Item", item);
-      spawn("mstsc.exe", ["/v:" + item.name]);
+      if (os.platform == "win32") {
+        spawn("mstsc.exe", ["/v:" + item.name]);
+      } else {
+        spawn("rdesktop", [item.name]);
+      }
     },
     startCreate() {
       this.host = {

@@ -111,7 +111,7 @@ function createAuthWindow() {
       nodeIntegration: false,
     },
   });
-
+  authWindow.setTitle("Authentication");
   authWindow.loadURL(authService.getAuthenticationURL());
 
   const {
@@ -161,6 +161,7 @@ async function createAppWindow() {
       icon: path.join(__dirname, "/extra/meshify.png"),
     },
   });
+  mainWindow.setTitle("Meshify Agent");
 
   // let application;
   // application.isQuiting = false;
@@ -293,8 +294,8 @@ app.on("ready", async () => {
   ]);
 
   tray.setContextMenu(contextMenu);
-  tray.setToolTip("meshify.app");
-  tray.setTitle("meshify.app");
+  tray.setToolTip("Meshify Agent");
+  tray.setTitle("Meshify Agent");
 
   createWindow();
 
