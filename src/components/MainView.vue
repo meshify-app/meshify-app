@@ -12,7 +12,7 @@
                 height="50"
                 alt="meshify"
             /></a>
-            <a class="navbar-brand">meshify.app</a>
+            <a class="navbar-brand">meshify.agent</a>
           </span>
           <v-spacer />
           <span>
