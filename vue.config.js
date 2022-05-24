@@ -5,7 +5,7 @@ module.exports = defineConfig({
     electronBuilder: {
       externals: ["vue-d3-network", "chokidar", "apexcharts"],
       builderOptions: {
-        productName: "meshifyapp",
+        productName: "meshifyagent",
         files: ["**/*"],
         extraFiles: [
           {
@@ -20,8 +20,8 @@ module.exports = defineConfig({
           },
         ],
       },
-      productName: "meshifyapp",
-      appId: "app.meshify.meshifyapp",
+      productName: "meshifyagent",
+      appId: "app.meshify.meshifyagent",
       author: "alan@meshify.app",
       description: "Unified Meshify Agent",
       win: {
