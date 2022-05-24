@@ -90,6 +90,9 @@
             >
               <!-- eslint-disable-next-line -->
               <template v-slot:item.action="{ item }">
+                <v-btn class="mx-2" icon @click="launchSSH(item)">
+                  <v-icon dark title="SSH"> mdi-ssh </v-icon>
+                </v-btn>
                 <v-btn class="mx-2" icon @click="launchRDP(item)">
                   <v-icon dark title="Remote Desktop">
                     mdi-remote-desktop
@@ -160,9 +163,7 @@ const axios = require("axios");
 const fs = window.require("fs");
 const D3Network = window.require("vue-d3-network");
 const ipcRenderer = window.require("electron").ipcRenderer;
-// const shell = window.require("electron").shell;
 const spawn = window.require("child_process").spawn;
-const exec = window.require("child_process").exec;
 const env = require("../../env");
 const ApexCharts = window.require("apexcharts");
 const os = window.require("os");
@@ -381,15 +382,32 @@ export default {
     },
     launchSSH(item) {
       console.log("SSH Item: ", item);
-      exec("cmd.exe", item.name);
-      spawn("cmd.exe", [item.name], { windowsHide: false });
+      if (os.platform == "win32") {
+        spawn("ssh", [item.name], {
+          windowsHide: false,
+          detached: true,
+          shell: true,
+        });
+      } else {
+        var child = spawn(
+          "exo-open",
+          ["--launch", "TerminalEmulator", "ssh", item.name],
+          {
+            foreground: true,
+            detached: true,
+            shell: true,
+          }
+        );
+        console.log("child = %s", child);
+      }
     },
     launchRDP(item) {
       console.log("RDP Item", item);
       if (os.platform == "win32") {
         spawn("mstsc.exe", ["/v:" + item.name]);
       } else {
-        spawn("rdesktop", [item.name]);
+        var child = spawn("rdesktop", ["-f", item.name]);
+        console.log("child = %s", child);
       }
     },
     startCreate() {
