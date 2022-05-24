@@ -389,16 +389,25 @@ export default {
           shell: true,
         });
       } else {
-        var child = spawn(
-          "exo-open",
-          ["--launch", "TerminalEmulator", "ssh", item.name],
-          {
+        if (process.arch == "arm7l") {
+          var child = spawn("lxterminal", ["ssh", item.name], {
             foreground: true,
             detached: true,
             shell: true,
-          }
-        );
-        console.log("child = %s", child);
+          });
+          console.log("child = %s", child);
+        } else {
+          var child2 = spawn(
+            "exo-open",
+            ["--launch", "TerminalEmulator", "ssh", item.name],
+            {
+              foreground: true,
+              detached: true,
+              shell: true,
+            }
+          );
+          console.log("child = %s", child2);
+        }
       }
     },
     launchRDP(item) {
