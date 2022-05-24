@@ -14,7 +14,6 @@ import authService from "./services/auth-service";
 import fs from "fs";
 const path = require("path");
 const fileWatcher = require("chokidar");
-import store from "./store";
 const env = require("../env");
 const os = require("os");
 
@@ -28,7 +27,6 @@ let MeshifyConfigPath = appData + "\\meshify\\meshify.conf";
 if (os.platform() == "linux") {
   MeshifyConfigPath = "/etc/meshify/meshify.conf";
 }
-
 
 //Multicast Client receiving sent messages
 var PORT = 25264;
@@ -46,7 +44,7 @@ mclient.on("listening", function () {
   mclient.addMembership(MCAST_ADDR);
 });
 
-mclient.on("message", function (message, remote) {
+mclient.on("message", function (message) {
   try {
     mainWindow.webContents.send("handle-dns", "" + message);
   } catch (e) {
@@ -62,7 +60,7 @@ mclient.bind(PORT, "0.0.0.0");
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
-    const url = request.url.substr(6);
+    const url = request.url.substring(6);
     callback({ path: path.normalize(`${__dirname}/${url}`) });
   });
 });
@@ -148,6 +146,7 @@ function destroyAuthWin() {
 async function createAppWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
+    title: "Meshify Agent",
     width: 1100,
     height: 800,
     autoHideMenuBar: true,
@@ -203,9 +202,6 @@ function startWatcher(path) {
     .on("add", function (path) {
       getConfig();
       console.log("Config = ", config);
-      store.state.meshes = config.config;
-      store.commit("meshes", config.config);
-
       try {
         mainWindow.webContents.send("handle-config", config.config);
       } catch (e) {
@@ -220,9 +216,6 @@ function startWatcher(path) {
     .on("change", function (path) {
       getConfig();
       console.log("Config = ", config);
-      store.state.meshes = config.config;
-      store.commit("meshes", config.config);
-
       try {
         mainWindow.webContents.send("handle-config", config.config);
       } catch (e) {

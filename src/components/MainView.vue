@@ -518,7 +518,7 @@ export default {
               console.log("Host = ", host);
               let changed = false;
               console.log("Checking meshify-client.config.json for updates");
-              if (this.meshifyConfig.HostID == null) {
+              if (this.meshifyConfig.HostID == "") {
                 this.meshifyConfig.HostID = host.hostGroup;
                 this.meshifyConfig.ApiKey = host.apiKey;
                 changed = true;
@@ -529,14 +529,43 @@ export default {
               }
               if (changed) {
                 console.log("Writing new meshify-client.config.json");
-                fs.writeFileSync(
-                  MeshifyClientPath,
-                  JSON.stringify(this.meshifyConfig)
-                );
-                console.log(
-                  "meshify-client.config.json has been updated :",
-                  this.meshifyConfig
-                );
+                try {
+                  fs.writeFileSync(
+                    MeshifyClientPath,
+                    JSON.stringify(this.meshifyConfig)
+                  );
+                  console.log(
+                    "meshify-client.config.json has been updated :",
+                    this.meshifyConfig
+                  );
+                } catch (e) {
+                  console.log("Error updating config file: %s", e);
+                  if (os.platform() != "win32") {
+                    // If we're not on windows, try to sudo cp it
+                    try {
+                      fs.writeFileSync(
+                        "meshify-client.config.json.tmp",
+                        JSON.stringify(this.meshifyConfig)
+                      );
+                      spawn(
+                        "sudo",
+                        [
+                          "mv",
+                          "meshify-client.config.json.tmp",
+                          MeshifyClientPath,
+                        ],
+                        { windowsHide: false }
+                      );
+                    } catch (e) {
+                      {
+                        console.log(
+                          "Could not write meshify-client.config.json. %s",
+                          e
+                        );
+                      }
+                    }
+                  }
+                }
               }
             })
             .catch((error) => {
