@@ -356,6 +356,7 @@ export default {
         show: false,
       });
       win.loadURL("http://auth.meshify.app/v2/logout?federated");
+      alert("You have been logged out");
       // win.close();
       // remote.getCurrentWindow().loadURL("http://auth.meshify.app/v2/logout");
       // remote.getCurrentWindow().close();
