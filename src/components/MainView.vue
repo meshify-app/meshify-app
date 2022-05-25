@@ -389,11 +389,10 @@ export default {
           shell: true,
         });
       } else {
-        if (process.arch == "arm7l") {
-          var child = spawn("lxterminal", ["ssh", item.name], {
+        if (process.arch == "arm") {
+          var child = spawn("lxterminal", ["-e", "ssh", item.name], {
             foreground: true,
             detached: true,
-            shell: true,
           });
           console.log("child = %s", child);
         } else {
