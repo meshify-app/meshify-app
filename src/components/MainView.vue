@@ -195,7 +195,15 @@ ipcRenderer.on("handle-config", (e, arg) => {
 });
 let Queries = [];
 ipcRenderer.on("handle-dns", (e, arg) => {
-  Queries.push(arg);
+  let add = true;
+  // Eliminate duplicates before it goes on the main list
+  for (let i = 0; i < Queries.length; i++) {
+    if (Queries[i] == arg) {
+      add = false;
+      break;
+    }
+  }
+  if (add) Queries.push(arg);
 });
 
 export default {
