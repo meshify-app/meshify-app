@@ -16,12 +16,16 @@
           </span>
           <v-spacer />
           <span>
-            <button @click="startCreate()" class="btn btn-primary my-2 my-sm-0">
+            <button
+              :disabled="addMeshDisabled"
+              @click="startCreate()"
+              class="btn btn-primary my-2 my-sm-0"
+            >
               Add to Mesh
             </button>
             &nbsp;
-            <button class="btn btn-danger" @click="logout()" type="button">
-              Logout
+            <button class="btn btn-danger" @click="login()" type="button">
+              {{ loginText }}
             </button>
             &nbsp;
           </span>
@@ -33,6 +37,7 @@
       <div class="chart-wrapper">
         <div
           id="canvas"
+          v-show="showDns"
           style="
             border: 1px solid #000000;
             background: #333;
@@ -206,6 +211,7 @@ export default {
       { text: "Endpoint", value: "current.endpoint" },
       { text: "Actions", value: "action", sortable: false },
     ],
+    loginText: "Login",
     meshifyConfig: {},
     queries: [],
     meshes: [],
@@ -226,6 +232,8 @@ export default {
     hostEnable: true,
     hostName: "",
     showChart: false,
+    showDns: false,
+    logged_in: false,
     goptions: {
       grid: {
         show: true,
@@ -278,13 +286,13 @@ export default {
         labels: {
           formatter: function (value) {
             var result = value + " bps";
-            if (value > 1000) {
+            if (value >= 1000) {
               result = ((value / 1000) >> 0) + " Kbps";
             }
-            if (value > 1000000) {
+            if (value >= 1000000) {
               result = (value / 1000000).toFixed(1) + " Mbps";
             }
-            if (value > 1000000000) {
+            if (value >= 1000000000) {
               result = (value / 1000000000).toFixed(1) + " Gbps";
             }
             return result;
@@ -297,6 +305,9 @@ export default {
     chart: null,
   }),
   computed: {
+    addMeshDisabled() {
+      return this.logged_in == false;
+    },
     options() {
       return {
         force: 2000,
@@ -339,7 +350,6 @@ export default {
       this.meshifyConfig.CheckInterval = 10;
       this.meshifyConfig.HostID = "";
     }
-    this.getMeshList();
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
       this.loadMeshes();
@@ -361,6 +371,20 @@ export default {
       // win.close();
       // remote.getCurrentWindow().loadURL("http://auth.meshify.app/v2/logout");
       // remote.getCurrentWindow().close();
+      this.loginText = "Login";
+    },
+    async login() {
+      if (this.loginText == "Login") {
+        // createAuthWindow();
+        ipcRenderer.sendSync("authenticate");
+
+        this.loginText = "Logout";
+        this.logged_in = true;
+      } else {
+        this.loginText = "Login";
+        this.logged_in = false;
+        await this.logout();
+      }
     },
     loadMeshes() {
       if (Meshes) {
@@ -376,6 +400,7 @@ export default {
           if (this.queries.length > 1000) {
             this.queries.pop();
           }
+          this.showDns = true;
         }
         Queries = [];
       }
@@ -418,7 +443,7 @@ export default {
         console.log("child = %s", child);
       }
     },
-    startCreate() {
+    async startCreate() {
       this.host = {
         name: "",
         email: "",
@@ -430,7 +455,7 @@ export default {
       // if (Meshes != null) {
       //  this.meshes = Meshes;
       //}
-      this.getMeshList();
+      await this.getMeshList();
 
       this.meshList = { selected: { text: "", value: "" }, items: [] };
 
@@ -607,38 +632,42 @@ export default {
           if (error) throw new Error(error);
         });
     },
-    getMeshList() {
-      let accessToken = remote.getGlobal("accessToken");
-      let body = {
-        grant_type: "authorization_code",
-        client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
-        state: accessToken,
-        code: accessToken,
-        redirect_uri: serverUrl,
-      };
-      axios
-        .post(serverUrl + "/api/v1.0/auth/token", body, {
-          headers: {
-            Authorization: "Bearer " + accessToken,
-          },
-        })
-        .then(() => {
-          axios
-            .get(serverUrl + "/api/v1.0/mesh", {
-              headers: {
-                Authorization: "Bearer " + accessToken,
-              },
-            })
-            .then((response) => {
-              this.myMeshes = response.data;
-            })
-            .catch((error) => {
-              if (error) console.error(error);
-            });
-        })
-        .catch((error) => {
-          if (error) throw new Error(error);
-        });
+    async getMeshList() {
+      return new Promise((resolve, reject) => {
+        let accessToken = remote.getGlobal("accessToken");
+        if (!accessToken) return reject(new Error("no access token available"));
+        let body = {
+          grant_type: "authorization_code",
+          client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+          state: accessToken,
+          code: accessToken,
+          redirect_uri: serverUrl,
+        };
+        axios
+          .post(serverUrl + "/api/v1.0/auth/token", body, {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then(() => {
+            axios
+              .get(serverUrl + "/api/v1.0/mesh", {
+                headers: {
+                  Authorization: "Bearer " + accessToken,
+                },
+              })
+              .then((response) => {
+                this.myMeshes = response.data;
+                resolve();
+              })
+              .catch((error) => {
+                if (error) console.error(error);
+              });
+          })
+          .catch((error) => {
+            if (error) throw new Error(error);
+          });
+      });
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;

@@ -7,6 +7,7 @@ import {
   Tray,
   Menu,
   nativeImage,
+  ipcMain,
 } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
@@ -47,6 +48,7 @@ mclient.on("listening", function () {
 mclient.on("message", function (message) {
   try {
     mainWindow.webContents.send("handle-dns", "" + message);
+    console.log("Query: ", message);
   } catch (e) {
     console.error("send dns query to renderer:", e.toString());
   }
@@ -58,10 +60,25 @@ mclient.on("error", (err) => {
 
 mclient.bind(PORT, "0.0.0.0");
 
+// handle messages from renderer
+ipcMain.on('authenticate', (event, arg) => {
+  console.log(arg)
+  try {
+    createAuthWindow();
+    // authService.loadTokens();
+  } catch (err) {
+    console.error("Error creating Auth Window : ", err);
+  }
+  
+  event.returnValue = "something"
+})
+
+
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
     const url = request.url.substring(6);
-    callback({ path: path.normalize(`${__dirname}/${url}`) });
+    console.log("URL: ", url);
+    callback({ path: path.join(`${__dirname}/${url}`) });
   });
 });
 const isDevelopment = process.env.NODE_ENV !== "production";
@@ -78,11 +95,11 @@ let mainWindow;
 async function createWindow() {
   try {
     getConfig();
-    createAuthWindow();
-    authService.refreshTokens();
-    // mainWindow = createAppWindow()
+//    createAuthWindow();
+//    authService.refreshTokens();
+    createAppWindow()
   } catch (err) {
-    createAuthWindow();
+    // createAuthWindow();
     console.error("Error creating App Window : ", err);
   }
 }
@@ -124,7 +141,7 @@ function createAuthWindow() {
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
     await authService.loadTokens(url);
-    createAppWindow();
+    // createAppWindow();
     return destroyAuthWin();
   });
 
@@ -143,7 +160,7 @@ function destroyAuthWin() {
   authWindow = null;
 }
 
-async function createAppWindow() {
+function createAppWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     title: "Meshify Agent",
@@ -168,22 +185,30 @@ async function createAppWindow() {
 
   mainWindow.on("minimize", function (event) {
     event.preventDefault();
-    mainWindow.hide();
+    try {
+      mainWindow.hide();
+    } catch( e ) {
+
+    }
   });
 
   mainWindow.on("close", function (event) {
     event.preventDefault();
-    mainWindow.hide();
+    try {
+      mainWindow.hide();
+    } catch( e ) {
+
+    }
     return false;
   });
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
-    await mainWindow.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
+    mainWindow.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
   } else {
-    createProtocol("app");
+    createProtocol("mapp");
     // Load the index.html when not in development
-    mainWindow.loadURL("app://./index.html");
+    mainWindow.loadURL("mapp://./index.html");
   }
 }
 

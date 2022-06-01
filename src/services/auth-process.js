@@ -28,7 +28,7 @@ function createAuthWindow() {
 
   webRequest.onBeforeRequest(filter, async ({ url }) => {
     await authService.loadTokens(url);
-    createAppWindow();
+    // createAppWindow();
     return destroyAuthWin();
   });
 

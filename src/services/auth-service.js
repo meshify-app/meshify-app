@@ -1,15 +1,11 @@
 const request = require("request");
 const url = require("url");
 const envVariables = require("../../env");
-const keytar = require("keytar");
 const os = require("os");
 
 const { apiIdentifier, auth0Domain, clientId } = envVariables;
 
 const redirectUri = `file:///callback`;
-
-const keytarService = "meshify-agent";
-const keytarAccount = os.userInfo().username;
 
 let accessToken = null;
 let profile = null;
@@ -43,7 +39,7 @@ function getAuthenticationURL() {
 
 function refreshTokens() {
   return new Promise((resolve, reject) => {
-    const refreshToken = keytar.getPassword(keytarService, keytarAccount);
+    const refreshToken = "" // keytar.getPassword(keytarService, keytarAccount);
 
     if (!refreshToken) return reject(new Error("no refresh token available"));
 
@@ -106,15 +102,12 @@ function loadTokens(callbackURL) {
       global.accessToken = accessToken;
       refreshToken = responseBody.refresh_token;
 
-      keytar.setPassword(keytarService, keytarAccount, refreshToken);
-
       resolve();
     });
   });
 }
 
 async function logout() {
-  await keytar.deletePassword(keytarService, keytarAccount);
   accessToken = null;
   profile = null;
   refreshToken = null;
