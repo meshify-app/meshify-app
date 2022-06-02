@@ -48,7 +48,6 @@ mclient.on("listening", function () {
 mclient.on("message", function (message) {
   try {
     mainWindow.webContents.send("handle-dns", "" + message);
-    console.log("Query: ", message);
   } catch (e) {
     console.error("send dns query to renderer:", e.toString());
   }
@@ -71,7 +70,29 @@ ipcMain.on('authenticate', (event, arg) => {
   }
   
   event.returnValue = "something"
+});
+
+ipcMain.on("accessToken", (event) => {
+  event.returnValue = accessToken;
+  console.log("accessToken = ", accessToken)
+});
+
+
+ipcMain.on("logout", (event) => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+  });
+  win.loadURL("http://auth.meshify.app/v2/logout?federated");
+  
+  win.on("ready-to-show", () => {
+    win.close();
+  });
+
 })
+
+
 
 
 app.whenReady().then(() => {

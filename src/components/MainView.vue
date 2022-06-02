@@ -163,7 +163,6 @@
   </div>
 </template>
 <script>
-const { remote } = window.require("electron");
 const axios = require("axios");
 const fs = window.require("fs");
 const D3Network = window.require("vue-d3-network");
@@ -369,12 +368,8 @@ export default {
   },
   methods: {
     async logout() {
-      const win = new remote.BrowserWindow({
-        width: 800,
-        height: 600,
-        show: false,
-      });
-      win.loadURL("http://auth.meshify.app/v2/logout?federated");
+      ipcRenderer.send("logout");
+
       alert("You have been logged out");
       // win.close();
       // remote.getCurrentWindow().loadURL("http://auth.meshify.app/v2/logout");
@@ -548,7 +543,7 @@ export default {
       this.createHost(host);
     },
     createHost(host) {
-      let accessToken = remote.getGlobal("accessToken");
+      let accessToken = ipcRenderer.sendSync("accessToken");
       let body = {
         grant_type: "authorization_code",
         client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
@@ -642,7 +637,7 @@ export default {
     },
     async getMeshList() {
       return new Promise((resolve, reject) => {
-        let accessToken = remote.getGlobal("accessToken");
+        let accessToken = ipcRenderer.sendSync("accessToken");
         if (!accessToken) return reject(new Error("no access token available"));
         let body = {
           grant_type: "authorization_code",
