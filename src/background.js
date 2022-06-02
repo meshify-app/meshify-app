@@ -92,9 +92,6 @@ ipcMain.on("logout", (event) => {
 
 })
 
-
-
-
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
     const url = request.url.substring(6);
@@ -184,6 +181,7 @@ function destroyAuthWin() {
 function createAppWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
+    show: false,
     title: "Meshify Agent",
     width: 1100,
     height: 800,
@@ -203,6 +201,12 @@ function createAppWindow() {
 
   // let application;
   // application.isQuiting = false;
+
+  mainWindow.on("ready-to-show", function (event) {
+    mainWindow.show();
+    console.log("ready-to-show");
+  });
+
 
   mainWindow.on("minimize", function (event) {
     event.preventDefault();
