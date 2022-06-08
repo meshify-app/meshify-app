@@ -43,7 +43,7 @@ module.exports = defineConfig({
         legalTrademarks: "",
         verifyUpdateCodeSignature: false,
         requestedExecutionLevel: "requireAdministrator",
-        artifactName: "meshifyapp-${version}-${os}-${arch}.${ext}",
+        artifactName: "${productName}-${version}.${ext}",
       },
       nsis: {
         include: "build/installer.nsh",
@@ -55,6 +55,7 @@ module.exports = defineConfig({
         allowToChangeInstallationDirectory: false,
         createDesktopShortcut: true,
         createStartMenuShortcut: true,
+        artifactName: "${productName}-${version}.${ext}",
       },
     },
   },
