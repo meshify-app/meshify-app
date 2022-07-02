@@ -2,17 +2,20 @@
 
 ## Project setup
 ```
-yarn install
+npm install
 ```
 
 ### Compiles and hot-reloads for development
 ```
-yarn serve
+npm run electron:serve
 ```
 
 ### Compiles and minifies for production
 ```
-yarn build
+npm run electron:build
+```
+### Build cross-platform/cross-architecture
+```
 npm run electron:build -- --linux deb --arm64 --dir   # arm64 cross compile
 npm run electron:build -- --linux deb --armv7l --dir  # pi cross compile
 
@@ -20,7 +23,7 @@ npm run electron:build -- --linux deb --armv7l --dir  # pi cross compile
 
 ### Lints and fixes files
 ```
-yarn lint
+npm run lint
 ```
 
 ### Customize configuration
