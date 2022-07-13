@@ -1,6 +1,5 @@
 import { BrowserWindow } from "electron";
 import authService from "./auth-service";
-import createAppWindow from "./app-process";
 
 let win = null;
 

@@ -60,37 +60,35 @@ mclient.on("error", (err) => {
 mclient.bind(PORT, "0.0.0.0");
 
 // handle messages from renderer
-ipcMain.on('authenticate', (event, arg) => {
-  console.log(arg)
+ipcMain.on("authenticate", (event, arg) => {
+  console.log(arg);
   try {
     createAuthWindow();
     // authService.loadTokens();
   } catch (err) {
     console.error("Error creating Auth Window : ", err);
   }
-  
-  event.returnValue = "something"
+
+  event.returnValue = "something";
 });
 
 ipcMain.on("accessToken", (event) => {
   event.returnValue = accessToken;
-  console.log("accessToken = ", accessToken)
+  console.log("accessToken = ", accessToken);
 });
 
-
-ipcMain.on("logout", (event) => {
+ipcMain.on("logout", () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
     show: false,
   });
   win.loadURL("http://auth.meshify.app/v2/logout?federated");
-  
+
   win.on("ready-to-show", () => {
     win.close();
   });
-
-})
+});
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol("app", (request, callback) => {
@@ -113,9 +111,9 @@ let mainWindow;
 async function createWindow() {
   try {
     getConfig();
-//    createAuthWindow();
-//    authService.refreshTokens();
-    createAppWindow()
+    //    createAuthWindow();
+    //    authService.refreshTokens();
+    createAppWindow();
   } catch (err) {
     // createAuthWindow();
     console.error("Error creating App Window : ", err);
@@ -202,18 +200,17 @@ function createAppWindow() {
   // let application;
   // application.isQuiting = false;
 
-  mainWindow.on("ready-to-show", function (event) {
+  mainWindow.on("ready-to-show", function () {
     mainWindow.show();
     console.log("ready-to-show");
   });
-
 
   mainWindow.on("minimize", function (event) {
     event.preventDefault();
     try {
       mainWindow.hide();
-    } catch( e ) {
-
+    } catch (e) {
+      console.log("couldn't hide window ", e);
     }
   });
 
@@ -221,8 +218,8 @@ function createAppWindow() {
     event.preventDefault();
     try {
       mainWindow.hide();
-    } catch( e ) {
-
+    } catch (e) {
+      console.log("couldn't hide window ", e);
     }
     return false;
   });

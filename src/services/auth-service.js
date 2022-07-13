@@ -1,7 +1,6 @@
 const request = require("request");
 const url = require("url");
 const envVariables = require("../../env");
-const os = require("os");
 
 const { apiIdentifier, auth0Domain, clientId } = envVariables;
 
@@ -39,7 +38,7 @@ function getAuthenticationURL() {
 
 function refreshTokens() {
   return new Promise((resolve, reject) => {
-    const refreshToken = "" // keytar.getPassword(keytarService, keytarAccount);
+    refreshToken = ""; // keytar.getPassword(keytarService, keytarAccount);
 
     if (!refreshToken) return reject(new Error("no refresh token available"));
 

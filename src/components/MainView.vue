@@ -371,14 +371,10 @@ export default {
       ipcRenderer.send("logout");
 
       alert("You have been logged out");
-      // win.close();
-      // remote.getCurrentWindow().loadURL("http://auth.meshify.app/v2/logout");
-      // remote.getCurrentWindow().close();
       this.loginText = "Login";
     },
     async login() {
       if (this.loginText == "Login") {
-        // createAuthWindow();
         ipcRenderer.sendSync("authenticate");
 
         this.loginText = "Logout";
@@ -532,6 +528,20 @@ export default {
       // buckets: 12,
     },
     create(host) {
+      console.log("Create Host: ", host);
+      // get a new keypair from the keystore for this host
+      try {
+        axios
+          .get("http://127.0.0.1:53280/keys/", { headers: {} })
+          .then((response) => {
+            console.log("Public Key = ", response.data);
+            host.current.publicKey = response.data.Public;
+            host.current.privateKey = "";
+          });
+      } catch (e) {
+        console.log("Error getting keypair: ", e);
+      }
+
       this.host.name = this.hostName;
       this.host.current.endpoint = this.endpoint;
       this.host.current.listenPort = this.listenPort;
@@ -540,6 +550,7 @@ export default {
       this.host.meshid = this.meshList.selected.value;
       this.host.hostGroup = this.meshifyConfig.HostID;
       this.dialogCreate = false;
+      console.log("createHost Host = ", this.host);
       this.createHost(host);
     },
     createHost(host) {
