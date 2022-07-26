@@ -73,8 +73,8 @@ ipcMain.on("authenticate", (event, arg) => {
 });
 
 ipcMain.on("accessToken", (event) => {
-  event.returnValue = accessToken;
-  console.log("accessToken = ", accessToken);
+  event.returnValue = authService.getAccessToken();
+  console.log("accessToken = ", event.returnValue);
 });
 
 ipcMain.on("logout", () => {

@@ -84,6 +84,13 @@
           :key="i"
         >
           <v-expansion-panel-header>
+            <v-switch
+              dark
+              class="px-0"
+              color="success"
+              v-model="mesh.enable"
+              v-on:change="update(mesh)"
+            />
             {{ mesh.meshName }}
           </v-expansion-panel-header>
           <v-expansion-panel-content>
@@ -357,6 +364,15 @@ export default {
       this.meshifyConfig.CheckInterval = 10;
       this.meshifyConfig.HostID = "";
     }
+    // find the local host in a mesh and set the enable flag on the mesh
+    for (let i = 0; i < this.meshes.length; i++) {
+      for (let j = 0; j < this.meshes[i].hosts.length; j++) {
+        if (this.meshes[i].hosts[j].hostGroup == this.meshifyConfig.HostID) {
+          this.meshes[i].enable = this.meshes[i].hosts[j].enable;
+        }
+      }
+    }
+
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
       this.loadMeshes();
@@ -389,6 +405,16 @@ export default {
       if (Meshes) {
         this.meshes = Meshes;
         Meshes = null;
+        // find the local host in a mesh and set the enable flag on the mesh
+        for (let i = 0; i < this.meshes.length; i++) {
+          for (let j = 0; j < this.meshes[i].hosts.length; j++) {
+            if (
+              this.meshes[i].hosts[j].hostGroup == this.meshifyConfig.HostID
+            ) {
+              this.meshes[i].enable = this.meshes[i].hosts[j].enable;
+            }
+          }
+        }
         console.log("loadMeshes Config = ", this.meshes);
       }
     },
@@ -682,6 +708,51 @@ export default {
             if (error) throw new Error(error);
           });
       });
+    },
+    update(mesh) {
+      console.log("Update Mesh: ", mesh);
+      let accessToken = ipcRenderer.sendSync("accessToken");
+      if (!accessToken) ipcRenderer.sendSync("authenticate");
+      let body = {
+        grant_type: "authorization_code",
+        client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+        state: accessToken,
+        code: accessToken,
+        redirect_uri: serverUrl,
+      };
+      let host = null;
+      for (let i = 0; i < mesh.hosts.length; i++) {
+        if (mesh.hosts[i].hostGroup == this.meshifyConfig.HostID) {
+          host = mesh.hosts[i];
+          break;
+        }
+      }
+      if (host != null) {
+        host.enable = !host.enable;
+      } else {
+        return;
+      }
+      axios
+        .post(serverUrl + "/api/v1.0/auth/token", body, {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        })
+        .then(() => {
+          axios
+            .patch(serverUrl + "/api/v1.0/host/" + host.id, host, {
+              headers: {
+                Authorization: "Bearer " + accessToken,
+              },
+            })
+            .then(() => {})
+            .catch((error) => {
+              if (error) console.error(error);
+            });
+        })
+        .catch((error) => {
+          if (error) throw new Error(error);
+        });
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;
