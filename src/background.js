@@ -248,30 +248,43 @@ function startWatcher(path) {
   // Declare the listeners of the watcher
   watcher
     .on("add", function (path) {
-      getConfig();
-      console.log("Config = ", config);
-      try {
-        mainWindow.webContents.send("handle-config", config.config);
-      } catch (e) {
-        console.error("send config to renderer:", e.toString());
+      // check if the file is meshify.conf
+      if (path.includes("meshify.conf")) {
+        getConfig();
+        console.log("Add - Config = ", config);
+        try {
+          mainWindow.webContents.send("handle-config", config.config);
+        } catch (e) {
+          console.error("send config to renderer:", e.toString());
+        }
       }
-
       console.log("File", path, "has been added");
     })
     .on("addDir", function (path) {
       console.log("Directory", path, "has been added");
     })
     .on("change", function (path) {
-      getConfig();
-      console.log("Config = ", config);
-      try {
-        mainWindow.webContents.send("handle-config", config.config);
-      } catch (e) {
-        console.error("send config to renderer:", e.toString());
+      if (path.includes("meshify.conf")) {
+        getConfig();
+        console.log("Change - Config = ", config);
+        try {
+          mainWindow.webContents.send("handle-config", config.config);
+        } catch (e) {
+          console.error("send config to renderer:", e.toString());
+        }
       }
       console.log("File", path, "has been changed");
     })
     .on("unlink", function (path) {
+      // check if the file is meshify.conf
+      if (path.includes("meshify.conf")) {
+        var delconfig = [];
+        try {
+          mainWindow.webContents.send("handle-config", delconfig);
+        } catch (e) {
+          console.error("send config to renderer:", e.toString());
+        }
+      }
       console.log("File", path, "has been removed");
     })
     .on("unlinkDir", function (path) {
