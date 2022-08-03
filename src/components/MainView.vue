@@ -197,7 +197,7 @@ let Meshes;
 ipcRenderer.on("handle-config", (e, arg) => {
   // document window
   Meshes = arg;
-  console.log(Meshes);
+  console.log("Meshes updated: ", Meshes);
 });
 let Queries = [];
 ipcRenderer.on("handle-dns", (e, arg) => {
@@ -365,10 +365,12 @@ export default {
       this.meshifyConfig.HostID = "";
     }
     // find the local host in a mesh and set the enable flag on the mesh
-    for (let i = 0; i < this.meshes.length; i++) {
-      for (let j = 0; j < this.meshes[i].hosts.length; j++) {
-        if (this.meshes[i].hosts[j].hostGroup == this.meshifyConfig.HostID) {
-          this.meshes[i].enable = this.meshes[i].hosts[j].enable;
+    if (this.meshes != null) {
+      for (let i = 0; i < this.meshes.length; i++) {
+        for (let j = 0; j < this.meshes[i].hosts.length; j++) {
+          if (this.meshes[i].hosts[j].hostGroup == this.meshifyConfig.HostID) {
+            this.meshes[i].enable = this.meshes[i].hosts[j].enable;
+          }
         }
       }
     }
@@ -402,9 +404,11 @@ export default {
       }
     },
     loadMeshes() {
+      console.log("loadMeshes - Meshes = ", Meshes);
       if (Meshes) {
         this.meshes = Meshes;
         Meshes = null;
+        console.log("loadMeshes Config = ", this.meshes);
         // find the local host in a mesh and set the enable flag on the mesh
         for (let i = 0; i < this.meshes.length; i++) {
           for (let j = 0; j < this.meshes[i].hosts.length; j++) {
@@ -415,7 +419,6 @@ export default {
             }
           }
         }
-        console.log("loadMeshes Config = ", this.meshes);
       }
     },
     loadQueries() {
@@ -498,7 +501,16 @@ export default {
       this.meshList.selected = this.meshList.items[selected];
       this.dialogCreate = true;
     },
-
+    async stopService(meshName) {
+      console.log("stopService %s", meshName);
+      axios
+        .delete("http://127.0.0.1:53280/service/" + meshName + "/", {
+          headers: {},
+        })
+        .then((response) => {
+          console.log("stopService response = ", response);
+        });
+    },
     getMetrics(that, mesh) {
       let stats;
       axios
@@ -602,19 +614,15 @@ export default {
               },
             })
             .then((response) => {
-              let config;
-              try {
-                config = JSON.parse(fs.readFileSync(MeshifyConfigPath));
-                console.log("Config = ", config);
-                this.meshes = config.config;
-              } catch (e) {
-                console.log("Could not open meshify.conf:", e);
-              }
               let host = response.data;
               console.log("Host = ", host);
               let changed = false;
               console.log("Checking meshify-client.config.json for updates");
-              if (this.meshifyConfig.HostID == "") {
+              if (
+                this.meshifyConfig.HostID == "" ||
+                this.meshes == null ||
+                this.meshes.length == 0
+              ) {
                 this.meshifyConfig.HostID = host.hostGroup;
                 this.meshifyConfig.ApiKey = host.apiKey;
                 changed = true;
@@ -709,50 +717,57 @@ export default {
           });
       });
     },
-    update(mesh) {
-      console.log("Update Mesh: ", mesh);
-      let accessToken = ipcRenderer.sendSync("accessToken");
-      if (!accessToken) ipcRenderer.sendSync("authenticate");
-      let body = {
-        grant_type: "authorization_code",
-        client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
-        state: accessToken,
-        code: accessToken,
-        redirect_uri: serverUrl,
-      };
-      let host = null;
-      for (let i = 0; i < mesh.hosts.length; i++) {
-        if (mesh.hosts[i].hostGroup == this.meshifyConfig.HostID) {
-          host = mesh.hosts[i];
-          break;
+    async update(mesh) {
+      return new Promise((resolve, reject) => {
+        console.log("Update Mesh: ", mesh);
+        let accessToken = ipcRenderer.sendSync("accessToken");
+        if (!accessToken) ipcRenderer.sendSync("authenticate");
+        let body = {
+          grant_type: "authorization_code",
+          client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
+          state: accessToken,
+          code: accessToken,
+          redirect_uri: serverUrl,
+        };
+        let host = null;
+        for (let i = 0; i < mesh.hosts.length; i++) {
+          if (mesh.hosts[i].hostGroup == this.meshifyConfig.HostID) {
+            host = mesh.hosts[i];
+            break;
+          }
         }
-      }
-      if (host != null) {
-        host.enable = !host.enable;
-      } else {
-        return;
-      }
-      axios
-        .post(serverUrl + "/api/v1.0/auth/token", body, {
-          headers: {
-            Authorization: "Bearer " + accessToken,
-          },
-        })
-        .then(() => {
-          axios
-            .patch(serverUrl + "/api/v1.0/host/" + host.id, host, {
-              headers: {
-                Authorization: "Bearer " + accessToken,
-              },
-            })
-            .then(() => {})
-            .catch((error) => {
-              if (error) console.error(error);
-            });
-        })
-        .catch((error) => {
-          if (error) throw new Error(error);
-        });
+        if (host != null) {
+          host.enable = !host.enable;
+        } else {
+          return reject(new Error("local host not found in mesh"));
+        }
+        axios
+          .post(serverUrl + "/api/v1.0/auth/token", body, {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          })
+          .then(() => {
+            axios
+              .patch(serverUrl + "/api/v1.0/host/" + host.id, host, {
+                headers: {
+                  Authorization: "Bearer " + accessToken,
+                },
+              })
+              .then(() => {
+                if (!host.enable) {
+                  this.stopService(mesh.meshName);
+                }
+                resolve();
+              })
+              .catch((error) => {
+                if (error) console.error(error);
+              });
+          })
+          .catch((error) => {
+            if (error) throw new Error(error);
+          });
+      });
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;
