@@ -120,7 +120,7 @@
               <!-- eslint-disable-next-line -->
               <template v-slot:item.action="{ item }">
                 <v-btn class="mx-2" icon @click="launchSSH(item)">
-                  <v-icon dark title="SSH"> mdi-ssh </v-icon>
+                  <v-icon dark title="SSH"> mdi-lan-connect </v-icon>
                 </v-btn>
                 <v-btn class="mx-2" icon @click="launchRDP(item)">
                   <v-icon dark title="Remote Desktop">
