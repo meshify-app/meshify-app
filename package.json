@@ -2,7 +2,7 @@
   "name": "meshifyagent",
   "author": "meshify.app <info@meshify.app> https://meshify.app",
   "description": "Unified Meshify Agent",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

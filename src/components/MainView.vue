@@ -17,14 +17,31 @@
           <v-spacer />
           <span>
             <button
+              class="btn btn-primary my-2 my-sm-0"
+              icon
+              @click="startSettings()"
+            >
+              <v-icon title="Settings" dark> mdi-cog </v-icon>
+              Settings
+            </button>
+            &nbsp;
+            <button
               :disabled="addMeshDisabled"
               @click="startCreate()"
               class="btn btn-primary my-2 my-sm-0"
             >
+              <img
+                class="ml-1"
+                :src="require('../assets/meshify-bw.png')"
+                height="24"
+                width="24"
+                alt="meshify"
+              />
               Add to Mesh
             </button>
             &nbsp;
             <button class="btn btn-danger" @click="login()" type="button">
+              <v-icon title="Authentication" dark> mdi-lock </v-icon>
               {{ loginText }}
             </button>
             &nbsp;
@@ -167,6 +184,51 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="dialogSettings" max-width="550">
+      <v-card>
+        <v-card-title class="headline">Settings</v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col cols="12">
+              <v-form ref="form" v-model="valid">
+                <v-text-field
+                  v-model="meshifyHost"
+                  label="Meshify Host"
+                  :rules="[
+                    (v) =>
+                      !!v || 'host is required, eg. https://my.meshify.app/',
+                  ]"
+                  required
+                />
+                <v-text-field
+                  v-model="hostId"
+                  label="Host Group"
+                  :rules="[(v) => !!v || 'Host Group is required']"
+                  required
+                />
+                <v-text-field
+                  v-model="apiKey"
+                  label="Api Key"
+                  :rules="[(v) => !!v || 'Api Key is required']"
+                  required
+                />
+              </v-form>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="!valid" color="success" @click="saveSettings()">
+            Submit
+            <v-icon right dark>mdi-check-outline</v-icon>
+          </v-btn>
+          <v-btn color="primary" @click="dialogSettings = false">
+            Cancel
+            <v-icon right dark>mdi-close-circle-outline</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 <script>
@@ -237,6 +299,11 @@ export default {
     nodeSize: 30,
     selected: "",
     dialogCreate: false,
+    dialogSettings: false,
+    meshifyHost: "",
+    hostId: "",
+    apiKey: "",
+    oneHour: 0,
     host: null,
     valid: false,
     meshList: {},
@@ -377,6 +444,14 @@ export default {
 
     // setInterval(loadMeshes, 1000);
     setInterval(() => {
+      this.oneHour++;
+      if (this.oneHour > (60 * 60) / 5) {
+        // no longer authenticated
+        this.LoginText = "Login";
+        this.logged_in = false;
+
+        this.oneHour = 0;
+      }
       this.loadMeshes();
       this.loadQueries();
       if (this.mesh != null) {
@@ -404,8 +479,8 @@ export default {
       }
     },
     loadMeshes() {
-      console.log("loadMeshes - Meshes = ", Meshes);
       if (Meshes) {
+        console.log("loadMeshes - Meshes = ", Meshes);
         this.meshes = Meshes;
         Meshes = null;
         console.log("loadMeshes Config = ", this.meshes);
@@ -722,6 +797,7 @@ export default {
         console.log("Update Mesh: ", mesh);
         let accessToken = ipcRenderer.sendSync("accessToken");
         if (!accessToken) ipcRenderer.sendSync("authenticate");
+        if (!accessToken) accessToken = ipcRenderer.sendSync("accessToken");
         let body = {
           grant_type: "authorization_code",
           client_id: "Dz2KZcK8BT7ELBb91VnFzg8Xg1II6nLb",
@@ -768,6 +844,20 @@ export default {
             if (error) throw new Error(error);
           });
       });
+    },
+    startSettings() {
+      this.dialogSettings = true;
+
+      this.meshifyHost = this.meshifyConfig.MeshifyHost;
+      this.hostId = this.meshifyConfig.HostID;
+      this.apiKey = this.meshifyConfig.ApiKey;
+    },
+    saveSettings() {
+      this.meshifyConfig.MeshifyHost = this.meshifyHost;
+      this.meshifyConfig.HostID = this.hostId;
+      this.meshifyConfig.ApiKey = this.apiKey;
+      this.dialogSettings = false;
+      this.saveConfig();
     },
     loadNetwork(evt) {
       let name = evt.currentTarget.innerText;
