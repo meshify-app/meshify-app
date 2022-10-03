@@ -447,7 +447,8 @@ export default {
       this.oneHour++;
       if (this.oneHour > (60 * 60) / 5) {
         // no longer authenticated
-        this.LoginText = "Login";
+        console.log("No longer authenticated");
+        this.loginText = "Login";
         this.logged_in = false;
 
         this.oneHour = 0;
